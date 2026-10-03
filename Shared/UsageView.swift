@@ -12,6 +12,42 @@ struct UsageView: View {
 
     private var picked: HeatDay? { snapshot?.heatmap.first { $0.date == selectedDay } }
     private var heatmap: Heatmap { Heatmap(days: snapshot?.heatmap ?? [], selected: selectedDay) }
+    private var today: String { snapshot?.heatmap.last?.date ?? "" }
+
+    private func neighbor(_ d: HeatDay, _ step: Int) -> HeatDay? {
+        guard let days = snapshot?.heatmap, let i = days.firstIndex(where: { $0.date == d.date }),
+              days.indices.contains(i + step) else { return nil }
+        return days[i + step]
+    }
+
+    private func dayBar(_ d: HeatDay, font: CGFloat, short: Bool = false) -> some View {
+        HStack(spacing: 4) {
+            arrow("chevron.left", neighbor(d, -1), font)
+            Text(short ? "\(dayLabel(d)) \(Fmt.compact(d.tokens))"
+                       : "\(dayLabel(d))：输入+输出 \(Fmt.compact(d.tokens)) token · 消息 \(d.messages.formatted())")
+                .monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+            arrow("chevron.right", neighbor(d, 1), font)
+            Spacer(minLength: 0)
+            Button(intent: SetDayIntent("")) {
+                Image(systemName: "xmark").font(.system(size: font - 1, weight: .semibold))
+                    .frame(width: font + 8, height: font + 8)
+                    .background(Circle().fill(.quaternary))
+            }
+            .buttonStyle(.plain)
+        }
+        .font(.system(size: font)).foregroundStyle(.secondary)
+    }
+
+    private func arrow(_ icon: String, _ target: HeatDay?, _ font: CGFloat) -> some View {
+        Button(intent: SetDayIntent(target?.date ?? "")) {
+            Image(systemName: icon).font(.system(size: font, weight: .semibold))
+                .frame(width: font + 10, height: font + 8)
+                .background(RoundedRectangle(cornerRadius: 5).fill(.quaternary))
+        }
+        .buttonStyle(.plain)
+        .disabled(target == nil)
+        .opacity(target == nil ? 0.3 : 1)
+    }
 
     private func dayLabel(_ d: HeatDay) -> String {
         let p = d.date.split(separator: "-").compactMap { Int($0) }
@@ -38,18 +74,18 @@ struct UsageView: View {
             Text(Fmt.compact(stats.tokens.main)).font(.system(size: 28, weight: .bold)).monospacedDigit()
                 .minimumScaleFactor(0.6).lineLimit(1)
             Text("Token（输入+输出）").font(.system(size: 10)).foregroundStyle(.secondary)
-            Group {
-                if let d = picked {
-                    Text("\(dayLabel(d)) · \(Fmt.compact(d.tokens))")
-                } else {
-                    HStack(spacing: 10) {
-                        Text("消息 \(stats.messages.formatted())")
-                        Text("会话 \(stats.sessions)")
-                    }
+            if let d = picked {
+                dayBar(d, font: 10, short: true)
+                heatmap
+            } else {
+                HStack(spacing: 10) {
+                    Text("消息 \(stats.messages.formatted())")
+                    Text("会话 \(stats.sessions)")
                 }
+                .font(.system(size: 11)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+                // 格子太小点不准：整块热力图点一下先选中今天，之后用箭头切换
+                Button(intent: SetDayIntent(today)) { heatmap.disabled(true) }.buttonStyle(.plain)
             }
-            .font(.system(size: 11)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
-            heatmap
         }
     }
 
@@ -57,16 +93,16 @@ struct UsageView: View {
         VStack(alignment: .leading, spacing: 6) {
             header(font: 11)
             if tab == .overview {
-                HStack(spacing: 5) {
-                    card("Token（输入+输出）", Fmt.compact(stats.tokens.main), compact: true)
-                    card("消息", stats.messages.formatted(), compact: true)
-                    card("活跃天数", stats.activeDays.formatted(), compact: true)
+                HStack(spacing: 8) {
+                    VStack(spacing: 4) {
+                        card("Token（输入+输出）", Fmt.compact(stats.tokens.main), compact: true)
+                        card("消息", stats.messages.formatted(), compact: true)
+                        if picked == nil { card("活跃天数", stats.activeDays.formatted(), compact: true) }
+                    }
+                    .frame(width: 112)
+                    heatmap
                 }
-                heatmap
-                if let d = picked {
-                    Text("\(dayLabel(d))：输入+输出 \(Fmt.compact(d.tokens)) token · 消息 \(d.messages.formatted())")
-                        .font(.system(size: 10)).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
-                }
+                if let d = picked { dayBar(d, font: 10) }
             } else {
                 ForEach(stats.models.prefix(2)) { m in
                     VStack(alignment: .leading, spacing: 2) {
@@ -132,10 +168,10 @@ struct UsageView: View {
                 }
             }
             heatmap
-            if let d = picked {
-                footer("\(dayLabel(d))：输入+输出 \(Fmt.compact(d.tokens)) token · 消息 \(d.messages.formatted())")
-            } else {
-                footer("用掉的 token 约是《小王子》全书的 \(max(1, stats.tokens.main / 22_000)) 倍")
+            HStack {
+                if let d = picked { dayBar(d, font: 11) }
+                Spacer()
+                updated
             }
         }
     }
@@ -184,6 +220,13 @@ struct UsageView: View {
             Text(Fmt.compact(n)).font(.system(size: 12, weight: .medium)).monospacedDigit()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var updated: some View {
+        Group {
+            if let t = snapshot?.generatedAt { Text("更新于 \(t.formatted(date: .omitted, time: .shortened))") }
+        }
+        .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
     }
 
     private func footer(_ text: String) -> some View {

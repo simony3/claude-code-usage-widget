@@ -35,6 +35,18 @@ struct SelectDayIntent: AppIntent {
     }
 }
 
+// 箭头和关闭按钮用：直接设定选中日期，空字符串表示收起
+struct SetDayIntent: AppIntent {
+    static var title: LocalizedStringResource = "设定查看日期"
+    @Parameter(title: "日期") var day: String
+    init() {}
+    init(_ d: String) { day = d }
+    func perform() async throws -> some IntentResult {
+        Shared.defaults.set(day.isEmpty ? nil : day, forKey: "day")
+        return .result()
+    }
+}
+
 extension Shared {
     static var selectedDay: String? { defaults.string(forKey: "day") }
     static var tab: UsageTab { UsageTab(rawValue: defaults.string(forKey: "tab") ?? "") ?? .overview }
