@@ -1,0 +1,29 @@
+import AppIntents
+import WidgetKit
+
+struct SelectTabIntent: AppIntent {
+    static var title: LocalizedStringResource = "切换页面"
+    @Parameter(title: "页面") var tab: String
+    init() {}
+    init(_ t: UsageTab) { tab = t.rawValue }
+    func perform() async throws -> some IntentResult {
+        Shared.defaults.set(tab, forKey: "tab")
+        return .result()
+    }
+}
+
+struct SelectRangeIntent: AppIntent {
+    static var title: LocalizedStringResource = "切换时间范围"
+    @Parameter(title: "范围") var range: String
+    init() {}
+    init(_ r: UsageRange) { range = r.rawValue }
+    func perform() async throws -> some IntentResult {
+        Shared.defaults.set(range, forKey: "range")
+        return .result()
+    }
+}
+
+extension Shared {
+    static var tab: UsageTab { UsageTab(rawValue: defaults.string(forKey: "tab") ?? "") ?? .overview }
+    static var range: UsageRange { UsageRange(rawValue: defaults.string(forKey: "range") ?? "") ?? .all }
+}
