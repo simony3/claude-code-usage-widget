@@ -306,7 +306,6 @@ struct Heatmap: View {
                                     shape.fill(color(days[i].messages, levels)).frame(width: cellW, height: cell)
                                 }
                                 .buttonStyle(.plain)
-                                .help("\(Fmt.day(days[i].date)) · 全部 \(Fmt.compact(days[i].allTokens))")
                             }
                         }
                     }
