@@ -22,12 +22,20 @@ struct Provider: TimelineProvider {
 struct UsageWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "ClaudeUsage", provider: Provider()) { e in
-            UsageView(snapshot: e.snapshot, tab: e.tab, range: e.range)
-                .containerBackground(.fill.tertiary, for: .widget)
+            FamilyView(entry: e).containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Claude Code 用量")
         .description("会话、消息、token 用量和每日活跃热力图")
-        .supportedFamilies([.systemLarge, .systemExtraLarge])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
+    }
+}
+
+struct FamilyView: View {
+    let entry: UsageEntry
+    @Environment(\.widgetFamily) var family
+    var body: some View {
+        let size: UsageSize = family == .systemSmall ? .small : family == .systemMedium ? .medium : .large
+        UsageView(snapshot: entry.snapshot, tab: entry.tab, range: entry.range, size: size)
     }
 }
 

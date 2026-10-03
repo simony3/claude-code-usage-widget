@@ -26,7 +26,7 @@ enum StatsEngine {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("ClaudeUsage")
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("cache-v1.json")
+        return dir.appendingPathComponent("cache-v2.json")
     }()
 
     static func loadCache() -> [String: FileAgg] {
@@ -75,6 +75,8 @@ enum StatsEngine {
             guard isAsst || line.range(of: userTag) != nil,
                   let o = try? JSONSerialization.jsonObject(with: line) as? [String: Any],
                   let type = o["type"] as? String, type == "user" || type == "assistant",
+                  // 只统计 Claude Code CLI；桌面版 Code 也写到这里，entrypoint 为 claude-desktop
+                  (o["entrypoint"] as? String)?.contains("cli") ?? true,
                   let ts = o["timestamp"] as? String,
                   let date = isoFrac.date(from: ts) ?? iso.date(from: ts),
                   let msg = o["message"] as? [String: Any] else { continue }

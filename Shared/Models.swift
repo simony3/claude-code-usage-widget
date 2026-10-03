@@ -1,12 +1,14 @@
 import Foundation
 
+import Darwin
+
+// 没有描述文件就用不了 App Group：App 写到真实家目录下，小组件靠沙盒只读例外读取
 enum Shared {
-    static let appGroup = "7C52KNT3ZW.com.lisixuan.ClaudeUsage"
-    static var container: URL {
-        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup)!
-    }
-    static var snapshotURL: URL { container.appendingPathComponent("snapshot.json") }
-    static var defaults: UserDefaults { UserDefaults(suiteName: appGroup)! }
+    static var realHome: String { String(cString: getpwuid(getuid())!.pointee.pw_dir) }
+    static var dataDir: URL { URL(fileURLWithPath: realHome + "/Library/Application Support/ClaudeUsage") }
+    static var snapshotURL: URL { dataDir.appendingPathComponent("snapshot.json") }
+    // 切换页面的按钮和小组件跑在同一个扩展进程里，用扩展自己的偏好设置即可
+    static var defaults: UserDefaults { .standard }
 }
 
 enum UsageTab: String, CaseIterable, Codable, Sendable { case overview, models }
@@ -52,9 +54,14 @@ struct UsageSnapshot: Codable, Sendable {
     var ranges: [UsageRange: RangeStats]
     var heatmap: [HeatDay]
 
+    static var lastError = ""
     static func load() -> UsageSnapshot? {
-        guard let data = try? Data(contentsOf: Shared.snapshotURL) else { return nil }
-        return try? JSONDecoder.iso.decode(UsageSnapshot.self, from: data)
+        do {
+            return try JSONDecoder.iso.decode(UsageSnapshot.self, from: Data(contentsOf: Shared.snapshotURL))
+        } catch {
+            lastError = "\(Shared.snapshotURL.path)\n\(error.localizedDescription)"
+            return nil
+        }
     }
 }
 

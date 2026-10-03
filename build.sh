@@ -15,7 +15,7 @@ if [ "${1:-}" = install ]; then
   rm -rf /Applications/ClaudeUsage.app
   cp -R "$APP" /Applications/
   # 编译目录里的副本也会被系统登记，注销掉免得小组件列表出现重复项
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$APP"
+  /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$APP" 2>/dev/null || true
   pluginkit -r "$APP/Contents/PlugIns/ClaudeUsageWidget.appex" 2>/dev/null || true
   open /Applications/ClaudeUsage.app
   echo "已安装到 /Applications 并启动"

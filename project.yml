@@ -24,8 +24,7 @@ targets:
         CFBundleDisplayName: Claude 用量
     entitlements:
       path: App/ClaudeUsage.entitlements
-      properties:
-        com.apple.security.application-groups: [7C52KNT3ZW.com.lisixuan.ClaudeUsage]
+      properties: {}
     dependencies:
       - target: ClaudeUsageWidget
   ClaudeUsageWidget:
@@ -45,4 +44,4 @@ targets:
       path: Widget/ClaudeUsageWidget.entitlements
       properties:
         com.apple.security.app-sandbox: true
-        com.apple.security.application-groups: [7C52KNT3ZW.com.lisixuan.ClaudeUsage]
+        com.apple.security.temporary-exception.files.home-relative-path.read-only: ["/Library/Application Support/ClaudeUsage/"]

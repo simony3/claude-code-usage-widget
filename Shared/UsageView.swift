@@ -1,28 +1,85 @@
 import SwiftUI
 import AppIntents
 
+enum UsageSize { case small, medium, large }
+
 struct UsageView: View {
     let snapshot: UsageSnapshot?
     let tab: UsageTab
     let range: UsageRange
+    var size: UsageSize = .large
 
-    private var stats: RangeStats { snapshot?.ranges[range] ?? RangeStats() }
+    private var stats: RangeStats { snapshot?.ranges[size == .small ? .all : range] ?? RangeStats() }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 2) {
-                pill("概览", tab == .overview, SelectTabIntent(.overview))
-                pill("模型", tab == .models, SelectTabIntent(.models))
-                Spacer()
-                ForEach(UsageRange.allCases, id: \.self) { r in
-                    pill(r.label, range == r, SelectRangeIntent(r))
-                }
+        if snapshot == nil {
+            Text("读不到数据：\(UsageSnapshot.lastError)").font(.system(size: 10)).foregroundStyle(.secondary)
+        } else if size == .small {
+            small
+        } else if size == .medium {
+            medium
+        } else {
+            full
+        }
+    }
+
+    private var small: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Claude Code · 全部").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+            Text(Fmt.compact(stats.tokens.main)).font(.system(size: 28, weight: .bold)).monospacedDigit()
+                .minimumScaleFactor(0.6).lineLimit(1)
+            Text("Token（输入+输出）").font(.system(size: 10)).foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                Text("消息 \(stats.messages.formatted())")
+                Text("会话 \(stats.sessions)")
             }
-            if snapshot == nil {
-                Spacer()
-                Text("还没有数据：请先打开一次「Claude 用量」App").font(.callout).foregroundStyle(.secondary)
-                Spacer()
-            } else if tab == .overview {
+            .font(.system(size: 11)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+            Heatmap(days: snapshot?.heatmap ?? [])
+        }
+    }
+
+    private var medium: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            header(font: 11)
+            if tab == .overview {
+                HStack(spacing: 5) {
+                    card("Token（输入+输出）", Fmt.compact(stats.tokens.main), compact: true)
+                    card("消息", stats.messages.formatted(), compact: true)
+                    card("活跃天数", stats.activeDays.formatted(), compact: true)
+                }
+                Heatmap(days: snapshot?.heatmap ?? [])
+            } else {
+                ForEach(stats.models.prefix(2)) { m in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(m.name).font(.system(size: 11, weight: .semibold))
+                        HStack(spacing: 4) {
+                            mini("输入", m.tokens.input); mini("输出", m.tokens.output)
+                            mini("缓存读", m.tokens.cacheRead); mini("缓存写", m.tokens.cacheWrite)
+                        }
+                    }
+                    .padding(5)
+                    .background(RoundedRectangle(cornerRadius: 7).fill(.quaternary))
+                }
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    private func header(font: CGFloat) -> some View {
+        HStack(spacing: 2) {
+            pill("概览", tab == .overview, SelectTabIntent(.overview), font)
+            pill("模型", tab == .models, SelectTabIntent(.models), font)
+            Spacer()
+            ForEach(UsageRange.allCases, id: \.self) { r in
+                pill(r.label, range == r, SelectRangeIntent(r), font)
+            }
+        }
+    }
+
+    private var full: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            header(font: 12)
+            if tab == .overview {
                 overview
             } else {
                 models
@@ -30,10 +87,10 @@ struct UsageView: View {
         }
     }
 
-    private func pill(_ title: String, _ on: Bool, _ intent: some AppIntent) -> some View {
+    private func pill(_ title: String, _ on: Bool, _ intent: some AppIntent, _ size: CGFloat) -> some View {
         Button(intent: intent) {
             Text(title)
-                .font(.system(size: 12, weight: on ? .semibold : .regular))
+                .font(.system(size: size, weight: on ? .semibold : .regular))
                 .foregroundStyle(on ? .primary : .secondary)
                 .padding(.horizontal, 8).padding(.vertical, 3)
                 .background(RoundedRectangle(cornerRadius: 6).fill(on ? AnyShapeStyle(.quaternary) : AnyShapeStyle(.clear)))
@@ -87,10 +144,10 @@ struct UsageView: View {
         }
     }
 
-    private func card(_ title: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.7)
-            Text(value).font(.system(size: 16, weight: .semibold)).monospacedDigit()
+    private func card(_ title: String, _ value: String, compact: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: compact ? 1 : 2) {
+            Text(title).font(.system(size: compact ? 9 : 11)).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.7)
+            Text(value).font(.system(size: compact ? 14 : 16, weight: .semibold)).monospacedDigit()
                 .lineLimit(1).minimumScaleFactor(0.6)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -26,10 +26,12 @@ if args.contains("--once") || args.contains("--dump") || args.contains("--render
     if let i = args.firstIndex(of: "--render"), i + 1 < args.count {
         MainActor.assumeIsolated {
             let snap = UsageSnapshot.load()
-            for (tab, size, suffix) in [(UsageTab.overview, CGSize(width: 715, height: 345), "xl"),
-                                        (.overview, CGSize(width: 345, height: 345), "l"),
-                                        (.models, CGSize(width: 345, height: 345), "l-models")] {
-                let view = UsageView(snapshot: snap, tab: tab, range: .all)
+            for (tab, size, kind, suffix) in [(UsageTab.overview, CGSize(width: 715, height: 345), UsageSize.large, "xl"),
+                                              (.overview, CGSize(width: 345, height: 345), .large, "l"),
+                                              (.overview, CGSize(width: 345, height: 165), .medium, "m"),
+                                              (.models, CGSize(width: 345, height: 165), .medium, "m-models"),
+                                              (.overview, CGSize(width: 165, height: 165), .small, "s")] {
+                let view = UsageView(snapshot: snap, tab: tab, range: .all, size: kind)
                     .padding(16).frame(width: size.width, height: size.height)
                     .background(Color(white: 0.93)).environment(\.colorScheme, .light)
                 let r = ImageRenderer(content: view); r.scale = 2
