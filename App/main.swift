@@ -16,7 +16,7 @@ enum Refresher {
     }
 }
 
-// 调试用：--once 刷新一次后退出；--dump 打印快照 JSON；--render <png> 把小组件界面渲染成图片
+// 调试用：--once 刷新一次后退出；--dump 打印快照 JSON；--render <目录> 把各尺寸界面渲染成截图
 let args = CommandLine.arguments
 if args.contains("--once") || args.contains("--dump") || args.contains("--render") {
     Refresher.run()
@@ -26,16 +26,25 @@ if args.contains("--once") || args.contains("--dump") || args.contains("--render
     if let i = args.firstIndex(of: "--render"), i + 1 < args.count {
         MainActor.assumeIsolated {
             let snap = UsageSnapshot.load()
-            for (tab, size, kind, suffix) in [(UsageTab.overview, CGSize(width: 715, height: 345), UsageSize.large, "xl"),
-                                              (.overview, CGSize(width: 345, height: 345), .large, "l"),
-                                              (.overview, CGSize(width: 345, height: 165), .medium, "m"),
-                                              (.models, CGSize(width: 345, height: 165), .medium, "m-models"),
-                                              (.overview, CGSize(width: 165, height: 165), .small, "s")] {
-                let view = UsageView(snapshot: snap, tab: tab, range: .all, size: kind, selectedDay: StatsEngine.dayKey(Date()))
+            let today = StatsEngine.dayKey(Date())
+            let shots: [(UsageTab, CGSize, UsageSize, String?, String)] = [
+                (.overview, CGSize(width: 715, height: 345), .large, nil, "extra-large"),
+                (.overview, CGSize(width: 715, height: 345), .large, today, "extra-large-day"),
+                (.overview, CGSize(width: 345, height: 345), .large, nil, "large"),
+                (.models, CGSize(width: 345, height: 345), .large, nil, "large-models"),
+                (.overview, CGSize(width: 345, height: 165), .medium, nil, "medium"),
+                (.overview, CGSize(width: 345, height: 165), .medium, today, "medium-day"),
+                (.overview, CGSize(width: 165, height: 165), .small, nil, "small")]
+            for (tab, size, kind, day, suffix) in shots {
+                // 截图用实色卡片，不要桌面上的玻璃透明效果
+                let view = UsageView(snapshot: snap, tab: tab, range: .all, size: kind, selectedDay: day)
                     .padding(16).frame(width: size.width, height: size.height)
-                    .background(Color(white: 0.93)).environment(\.colorScheme, .light)
+                    .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Color(white: 0.965))
+                        .shadow(color: .black.opacity(0.12), radius: 10, y: 3))
+                    .padding(20)
+                    .environment(\.colorScheme, .light)
                 let r = ImageRenderer(content: view); r.scale = 2
-                let url = URL(fileURLWithPath: args[i + 1].replacingOccurrences(of: ".png", with: "-\(suffix).png"))
+                let url = URL(fileURLWithPath: args[i + 1]).appendingPathComponent("\(suffix).png")
                 if let tiff = r.nsImage?.tiffRepresentation, let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
                     try? png.write(to: url)
                 }

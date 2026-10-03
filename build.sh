@@ -2,7 +2,7 @@
 # Xcode 未登录 Apple 账号，自动签名不可用：先无签名编译，再用钥匙串里的 Apple Development 证书手动签
 set -euo pipefail
 cd "$(dirname "$0")"
-ID=F5C64C7791B2645C3CD22C35F6742BE32FAA06A9
+ID=${SIGN_ID:-F5C64C7791B2645C3CD22C35F6742BE32FAA06A9}  # 换成你自己的：security find-identity -v -p codesigning
 xcodegen generate >/dev/null
 xcodebuild -project ClaudeUsage.xcodeproj -scheme ClaudeUsage -configuration Release \
   -derivedDataPath build CODE_SIGNING_ALLOWED=NO build 2>&1 | grep -E 'error:|BUILD' | grep -v DVT

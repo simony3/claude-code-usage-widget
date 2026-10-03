@@ -21,6 +21,7 @@ targets:
       path: App/Info.plist
       properties:
         LSUIElement: true
+        CFBundleIconFile: AppIcon
         CFBundleDisplayName: Claude 用量
     entitlements:
       path: App/ClaudeUsage.entitlements
