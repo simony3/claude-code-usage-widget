@@ -1,6 +1,6 @@
-<p align="center"><img src="docs/icon.png" width="128" alt="Claude 用量图标"></p>
+<p align="center"><img src="docs/icon.png" width="128" alt="Claude Code Usage Widget 图标"></p>
 
-<h1 align="center">Claude 用量</h1>
+<h1 align="center">Claude Code Usage Widget</h1>
 
 <p align="center">把 Claude Code CLI 的使用统计放到 macOS 桌面上的原生小组件</p>
 
@@ -42,12 +42,12 @@
 需要 macOS 15+、Xcode、[XcodeGen](https://github.com/yonaskolb/XcodeGen)（`brew install xcodegen`），以及钥匙串里的一张 Apple Development 签名证书。
 
 ```bash
-git clone https://github.com/simony3/claude-usage.git
-cd claude-usage
+git clone https://github.com/simony3/claude-code-usage-widget.git
+cd claude-code-usage-widget
 SIGN_ID=<你的证书指纹> ./build.sh install
 ```
 
-证书指纹用 `security find-identity -v -p codesigning` 查。装好后在桌面右键 →「编辑小组件」→ 搜索「Claude」，把「Claude Code 用量」拖到桌面。
+证书指纹用 `security find-identity -v -p codesigning` 查。装好后在桌面右键 →「编辑小组件」→ 搜索「Claude」，把「Claude Code 用量小组件」拖到桌面。
 
 改了代码重新跑 `./build.sh install` 即可。
 
@@ -57,7 +57,7 @@ SIGN_ID=<你的证书指纹> ./build.sh install
 ~/.claude/projects/**/*.jsonl
         │  每 10 分钟扫描，只解析有变化的文件（增量缓存）
         ▼
-Claude 用量.app（后台常驻、开机自启、无窗口）
+ClaudeUsage.app（后台常驻、开机自启、无窗口）
         │  写 ~/Library/Application Support/ClaudeUsage/snapshot.json
         ▼
 小组件扩展（沙盒，只读这一个目录）──► 桌面

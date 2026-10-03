@@ -22,7 +22,7 @@ targets:
       properties:
         LSUIElement: true
         CFBundleIconFile: AppIcon
-        CFBundleDisplayName: Claude 用量
+        CFBundleDisplayName: Claude Code Usage Widget
     entitlements:
       path: App/ClaudeUsage.entitlements
       properties: {}
@@ -38,7 +38,7 @@ targets:
     info:
       path: Widget/Info.plist
       properties:
-        CFBundleDisplayName: Claude 用量
+        CFBundleDisplayName: Claude Code Usage Widget
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
