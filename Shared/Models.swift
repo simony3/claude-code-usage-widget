@@ -49,6 +49,14 @@ struct HeatDay: Codable, Sendable {
     var messages: Int
     var tokens: Int  // 输入+输出
     var allTokens: Int  // 含缓存读写
+    var detail: DayDetail? = nil  // 没有活动的日子为空
+}
+
+struct DayDetail: Codable, Sendable {
+    var tokens = TokenCounts()
+    var prompts = 0, replies = 0, sessions = 0
+    var peakHour: Int?
+    var models: [ModelStats] = []
 }
 
 struct UsageSnapshot: Codable, Sendable {
@@ -83,6 +91,14 @@ enum Fmt {
         case 1e4...: return String(format: "%.1fK", d / 1e3)
         default: return n.formatted()
         }
+    }
+    static func day(_ s: String, weekday: Bool = false) -> String {
+        let p = s.split(separator: "-").compactMap { Int($0) }
+        guard p.count == 3 else { return s }
+        guard weekday, let d = Calendar.current.date(from: DateComponents(year: p[0], month: p[1], day: p[2])) else {
+            return "\(p[1])月\(p[2])日"
+        }
+        return "\(p[1])月\(p[2])日 " + ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][Calendar.current.component(.weekday, from: d) - 1]
     }
     static func hour(_ h: Int?) -> String {
         guard let h else { return "—" }

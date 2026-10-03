@@ -1,8 +1,8 @@
 #!/bin/bash
-# Xcode 未登录 Apple 账号，自动签名不可用：先无签名编译，再用钥匙串里的 Apple Development 证书手动签
+# 小组件扩展必须签名才会被系统加载；默认 ad-hoc 签名，不依赖任何证书
 set -euo pipefail
 cd "$(dirname "$0")"
-ID=${SIGN_ID:-F5C64C7791B2645C3CD22C35F6742BE32FAA06A9}  # 换成你自己的：security find-identity -v -p codesigning
+ID=${SIGN_ID:--}
 xcodegen generate >/dev/null
 xcodebuild -project ClaudeUsage.xcodeproj -scheme ClaudeUsage -configuration Release \
   -derivedDataPath build CODE_SIGNING_ALLOWED=NO build 2>&1 | grep -E 'error:|BUILD' | grep -v DVT

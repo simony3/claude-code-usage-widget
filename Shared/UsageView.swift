@@ -11,7 +11,7 @@ struct UsageView: View {
     var selectedDay: String? = nil
 
     private var picked: HeatDay? { snapshot?.heatmap.first { $0.date == selectedDay } }
-    private var heatmap: Heatmap { Heatmap(days: snapshot?.heatmap ?? [], selected: selectedDay) }
+    private var heatmap: Heatmap { Heatmap(days: snapshot?.heatmap ?? []) }
     private var today: String { snapshot?.heatmap.last?.date ?? "" }
 
     private func neighbor(_ d: HeatDay, _ step: Int) -> HeatDay? {
@@ -20,22 +20,75 @@ struct UsageView: View {
         return days[i + step]
     }
 
-    private func dayBar(_ d: HeatDay, font: CGFloat, short: Bool = false) -> some View {
-        HStack(spacing: 4) {
-            arrow("chevron.left", neighbor(d, -1), font)
-            Text(short ? "\(d.date.split(separator: "-").suffix(2).map { String(Int($0) ?? 0) }.joined(separator: "/")) \(Fmt.compact(d.tokens))/\(Fmt.compact(d.allTokens))"
-                       : "\(dayLabel(d))：输入+输出 \(Fmt.compact(d.tokens)) · 全部 \(Fmt.compact(d.allTokens))")
-                .monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
-            arrow("chevron.right", neighbor(d, 1), font)
-            Spacer(minLength: 0)
-            Button(intent: SetDayIntent("")) {
-                Image(systemName: "xmark").font(.system(size: font - 1, weight: .semibold))
-                    .frame(width: font + 8, height: font + 8)
-                    .background(Circle().fill(.quaternary))
+    private func dayPage(_ d: HeatDay) -> some View {
+        let x = d.detail ?? DayDetail()
+        let f: CGFloat = size == .small ? 10 : 12
+        let compact = size != .large
+        return VStack(alignment: .leading, spacing: size == .large ? 8 : 5) {
+            HStack(spacing: 4) {
+                Button(intent: SetDayIntent("")) {
+                    HStack(spacing: 2) {
+                        Image(systemName: size == .small ? "arrow.uturn.backward" : "chevron.left").font(.system(size: f, weight: .semibold))
+                        if size != .small { Text("返回") }
+                    }
+                    .font(.system(size: f))
+                    .padding(.horizontal, 7).frame(height: f + 8)
+                    .background(RoundedRectangle(cornerRadius: 5).fill(.quaternary))
+                }
+                .buttonStyle(.plain)
+                Text(Fmt.day(d.date, weekday: size != .small)).font(.system(size: f + 1, weight: .semibold))
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                Spacer(minLength: 0)
+                arrow("chevron.left", neighbor(d, -1), f)
+                arrow("chevron.right", neighbor(d, 1), f)
             }
-            .buttonStyle(.plain)
+            if d.detail == nil {
+                Spacer(minLength: 0)
+                Text("这天没有使用记录").font(.system(size: f)).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+                Spacer(minLength: 0)
+            } else if size == .small {
+                Text(Fmt.compact(x.tokens.all)).font(.system(size: 26, weight: .bold)).monospacedDigit()
+                    .lineLimit(1).minimumScaleFactor(0.6)
+                Text("全部 Token").font(.system(size: 10)).foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                Group {
+                    Text("输入+输出 \(Fmt.compact(x.tokens.main))")
+                    Text("缓存 \(Fmt.compact(x.tokens.cacheRead + x.tokens.cacheWrite))")
+                    Text("消息 \(x.prompts + x.replies) · 会话 \(x.sessions)")
+                }
+                .font(.system(size: 10)).foregroundStyle(.secondary).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(Fmt.compact(x.tokens.all)).font(.system(size: compact ? 22 : 30, weight: .bold)).monospacedDigit()
+                    Text("全部 Token（含缓存）").font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+                HStack(spacing: 6) {
+                    card("输入", Fmt.compact(x.tokens.input), compact: compact)
+                    card("输出", Fmt.compact(x.tokens.output), compact: compact)
+                    card("缓存读", Fmt.compact(x.tokens.cacheRead), compact: compact)
+                    card("缓存写", Fmt.compact(x.tokens.cacheWrite), compact: compact)
+                }
+                HStack(spacing: 6) {
+                    card("你发的消息", x.prompts.formatted(), compact: compact)
+                    card("Claude 回复", x.replies.formatted(), compact: compact)
+                    card("会话", x.sessions.formatted(), compact: compact)
+                    card("高峰时段", Fmt.hour(x.peakHour), compact: compact)
+                }
+                if size == .large {
+                    ForEach(x.models.prefix(3)) { m in
+                        HStack {
+                            Text(m.name).font(.system(size: 12, weight: .semibold))
+                            Spacer()
+                            Text("\(m.replies.formatted()) 次回复 · 全部 \(Fmt.compact(m.tokens.all))")
+                                .font(.system(size: 11)).foregroundStyle(.secondary).monospacedDigit()
+                        }
+                        .padding(.horizontal, 8).padding(.vertical, 5)
+                        .background(RoundedRectangle(cornerRadius: 7).fill(.quaternary))
+                    }
+                }
+                Spacer(minLength: 0)
+            }
         }
-        .font(.system(size: font)).foregroundStyle(.secondary)
     }
 
     private func arrow(_ icon: String, _ target: HeatDay?, _ font: CGFloat) -> some View {
@@ -49,16 +102,13 @@ struct UsageView: View {
         .opacity(target == nil ? 0.3 : 1)
     }
 
-    private func dayLabel(_ d: HeatDay) -> String {
-        let p = d.date.split(separator: "-").compactMap { Int($0) }
-        return p.count == 3 ? "\(p[1])月\(p[2])日" : d.date
-    }
-
     private var stats: RangeStats { snapshot?.ranges[size == .small ? .all : range] ?? RangeStats() }
 
     var body: some View {
         if snapshot == nil {
             Text("读不到数据：\(UsageSnapshot.lastError)").font(.system(size: 10)).foregroundStyle(.secondary)
+        } else if let d = picked {
+            dayPage(d)
         } else if size == .small {
             small
         } else if size == .medium {
@@ -74,18 +124,13 @@ struct UsageView: View {
             Text(Fmt.compact(stats.tokens.main)).font(.system(size: 28, weight: .bold)).monospacedDigit()
                 .minimumScaleFactor(0.6).lineLimit(1)
             Text("Token（输入+输出）").font(.system(size: 10)).foregroundStyle(.secondary)
-            if let d = picked {
-                dayBar(d, font: 10, short: true)
-                heatmap
-            } else {
-                HStack(spacing: 10) {
-                    Text("全部 \(Fmt.compact(stats.tokens.all))")
-                    Text("活跃 \(stats.activeDays) 天")
-                }
-                .font(.system(size: 11)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
-                // 格子太小点不准：整块热力图点一下先选中今天，之后用箭头切换
-                Button(intent: SetDayIntent(today)) { heatmap.disabled(true) }.buttonStyle(.plain)
+            HStack(spacing: 10) {
+                Text("全部 \(Fmt.compact(stats.tokens.all))")
+                Text("活跃 \(stats.activeDays) 天")
             }
+            .font(.system(size: 11)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+            // 格子太小点不准：整块热力图点一下先打开今天，之后用箭头切换
+            Button(intent: SetDayIntent(today)) { heatmap.disabled(true) }.buttonStyle(.plain)
         }
     }
 
@@ -97,12 +142,11 @@ struct UsageView: View {
                     VStack(spacing: 4) {
                         card("Token（输入+输出）", Fmt.compact(stats.tokens.main), compact: true)
                         card("全部 Token（含缓存）", Fmt.compact(stats.tokens.all), compact: true)
-                        if picked == nil { card("活跃天数", stats.activeDays.formatted(), compact: true) }
+                        card("活跃天数", stats.activeDays.formatted(), compact: true)
                     }
                     .frame(width: 112)
                     heatmap
                 }
-                if let d = picked { dayBar(d, font: 10) }
             } else {
                 ForEach(stats.models.prefix(2)) { m in
                     VStack(alignment: .leading, spacing: 2) {
@@ -169,7 +213,6 @@ struct UsageView: View {
             }
             heatmap
             HStack {
-                if let d = picked { dayBar(d, font: 11) }
                 Spacer()
                 updated
             }
@@ -241,7 +284,6 @@ struct UsageView: View {
 
 struct Heatmap: View {
     let days: [HeatDay]
-    var selected: String? = nil
     private let gap: CGFloat = 3
 
     var body: some View {
@@ -260,12 +302,11 @@ struct Heatmap: View {
                             if i < 0 {
                                 Color.clear.frame(width: cellW, height: cell)
                             } else {
-                                Button(intent: SelectDayIntent(days[i].date)) {
-                                    shape.fill(color(days[i].messages, levels))
-                                        .overlay(shape.stroke(Color.primary, lineWidth: days[i].date == selected ? 1.5 : 0))
-                                        .frame(width: cellW, height: cell)
+                                Button(intent: SetDayIntent(days[i].date)) {
+                                    shape.fill(color(days[i].messages, levels)).frame(width: cellW, height: cell)
                                 }
                                 .buttonStyle(.plain)
+                                .help("\(Fmt.day(days[i].date)) · 全部 \(Fmt.compact(days[i].allTokens))")
                             }
                         }
                     }

@@ -23,19 +23,7 @@ struct SelectRangeIntent: AppIntent {
     }
 }
 
-struct SelectDayIntent: AppIntent {
-    static var title: LocalizedStringResource = "查看某天用量"
-    @Parameter(title: "日期") var day: String
-    init() {}
-    init(_ d: String) { day = d }
-    // 再点同一天就收起
-    func perform() async throws -> some IntentResult {
-        Shared.defaults.set(Shared.selectedDay == day ? nil : day, forKey: "day")
-        return .result()
-    }
-}
-
-// 箭头和关闭按钮用：直接设定选中日期，空字符串表示收起
+// 点格子、箭头和返回按钮用：设定查看日期，空字符串表示回到主界面
 struct SetDayIntent: AppIntent {
     static var title: LocalizedStringResource = "设定查看日期"
     @Parameter(title: "日期") var day: String

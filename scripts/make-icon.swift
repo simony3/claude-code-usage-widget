@@ -23,21 +23,35 @@ func draw(_ px: Int) -> Data {
     NSGradient(starting: NSColor(red: 0.91, green: 0.53, blue: 0.38, alpha: 1),
                ending: NSColor(red: 0.74, green: 0.34, blue: 0.20, alpha: 1))!.draw(in: squircle, angle: -90)
 
-    // 4×4 热力图方格，越靠右下越亮，像最近用量在上升
-    let alphas: [[CGFloat]] = [[0.22, 0.35, 0.22, 0.55],
-                               [0.35, 0.22, 0.60, 0.80],
-                               [0.22, 0.55, 0.80, 1.00],
-                               [0.45, 0.80, 1.00, 1.00]]
-    let cell: CGFloat = 132 * k, gap: CGFloat = 30 * k
-    let grid = cell * 4 + gap * 3
-    let origin = NSPoint(x: body.midX - grid / 2, y: body.midY - grid / 2)
-    for r in 0..<4 {
-        for c in 0..<4 {
-            let rect = NSRect(x: origin.x + CGFloat(c) * (cell + gap),
-                              y: origin.y + CGFloat(3 - r) * (cell + gap), width: cell, height: cell)
-            NSColor.white.withAlphaComponent(alphas[r][c]).setFill()
-            NSBezierPath(roundedRect: rect, xRadius: 30 * k, yRadius: 30 * k).fill()
-        }
+    // Claude 风格星芒：12 道里细外粗的圆头放射线，长短、粗细、角度略有参差，显得手绘而非机械
+    let center = NSPoint(x: body.midX, y: 590 * k)
+    let lengths: [CGFloat] = [1.0, 0.80, 0.93, 0.76, 0.98, 0.84, 0.90, 0.78, 1.0, 0.82, 0.92, 0.80]
+    let widths: [CGFloat] = [56, 48, 52, 46, 54, 50, 52, 46, 56, 48, 52, 48]
+    let jitter: [CGFloat] = [0, 4, -3, 5, -2, 3, -4, 2, 1, -5, 3, -2]
+    NSColor.white.setFill()
+    for i in 0..<12 {
+        let a = (CGFloat(i) * 30 + 90 + jitter[i]) * .pi / 180
+        let len = 235 * k * lengths[i], w = widths[i] * k / 2, w0 = 9 * k
+        let dir = NSPoint(x: cos(a), y: sin(a)), perp = NSPoint(x: -sin(a), y: cos(a))
+        let tip = NSPoint(x: center.x + dir.x * (len - w), y: center.y + dir.y * (len - w))
+        let ray = NSBezierPath()
+        ray.move(to: NSPoint(x: center.x + perp.x * w0, y: center.y + perp.y * w0))
+        ray.line(to: NSPoint(x: tip.x + perp.x * w, y: tip.y + perp.y * w))
+        ray.line(to: NSPoint(x: tip.x - perp.x * w, y: tip.y - perp.y * w))
+        ray.line(to: NSPoint(x: center.x - perp.x * w0, y: center.y - perp.y * w0))
+        ray.close()
+        ray.fill()
+        NSBezierPath(ovalIn: NSRect(x: tip.x - w, y: tip.y - w, width: w * 2, height: w * 2)).fill()
+    }
+
+    // 底部一排热力图方格，越往右越亮，点明是用量统计
+    let alphas: [CGFloat] = [0.25, 0.4, 0.3, 0.55, 0.7, 0.85, 1.0]
+    let cell: CGFloat = 74 * k, gap: CGFloat = 18 * k
+    let row = cell * 7 + gap * 6
+    for (c, alpha) in alphas.enumerated() {
+        let rect = NSRect(x: body.midX - row / 2 + CGFloat(c) * (cell + gap), y: 205 * k, width: cell, height: cell)
+        NSColor.white.withAlphaComponent(alpha).setFill()
+        NSBezierPath(roundedRect: rect, xRadius: 18 * k, yRadius: 18 * k).fill()
     }
     NSGraphicsContext.restoreGraphicsState()
     return rep.representation(using: .png, properties: [:])!

@@ -161,17 +161,28 @@ enum StatsEngine {
             s.favoriteModel = models.values.max { $0.replies < $1.replies }?.name
             ranges[r] = s
         }
-        var perDay: [String: Int] = [:], perDayTok: [String: Int] = [:], perDayAll: [String: Int] = [:]
+        var det: [String: DayDetail] = [:], dHours: [String: [Int]] = [:], dModels: [String: [String: ModelStats]] = [:]
         for f in cache.values {
-            for (d, a) in f.days {
-                perDay[d, default: 0] += a.prompts + a.replies
-                perDayTok[d, default: 0] += a.models.values.reduce(0) { $0 + $1.tokens.main }
-                perDayAll[d, default: 0] += a.models.values.reduce(0) { $0 + $1.tokens.all }
+            for (d, a) in f.days where a.prompts + a.replies > 0 {
+                det[d, default: DayDetail()].prompts += a.prompts
+                det[d]!.replies += a.replies
+                if !f.isSubagent { det[d]!.sessions += 1 }
+                for h in 0..<24 { dHours[d, default: [Int](repeating: 0, count: 24)][h] += a.hours[h] }
+                for (m, md) in a.models {
+                    let name = prettyModel(m)
+                    dModels[d, default: [:]][name, default: ModelStats(name: name, replies: 0, tokens: TokenCounts())].replies += md.replies
+                    dModels[d]![name]!.tokens.add(md.tokens)
+                    det[d]!.tokens.add(md.tokens)
+                }
             }
         }
+        for (d, h) in dHours { if let mx = h.max(), mx > 0 { det[d]!.peakHour = h.firstIndex(of: mx) } }
+        for (d, ms) in dModels { det[d]!.models = ms.values.sorted { $0.tokens.all > $1.tokens.all } }
         let heat = (0..<371).reversed().map { back -> HeatDay in
             let k = dayKey(cal.date(byAdding: .day, value: -back, to: today)!)
-            return HeatDay(date: k, messages: perDay[k] ?? 0, tokens: perDayTok[k] ?? 0, allTokens: perDayAll[k] ?? 0)
+            let x = det[k]
+            return HeatDay(date: k, messages: x.map { $0.prompts + $0.replies } ?? 0,
+                           tokens: x?.tokens.main ?? 0, allTokens: x?.tokens.all ?? 0, detail: x)
         }
         return UsageSnapshot(generatedAt: now, ranges: ranges, heatmap: heat)
     }

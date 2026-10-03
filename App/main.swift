@@ -31,10 +31,12 @@ if args.contains("--once") || args.contains("--dump") || args.contains("--render
                 (.overview, CGSize(width: 715, height: 345), .large, nil, "extra-large"),
                 (.overview, CGSize(width: 715, height: 345), .large, today, "extra-large-day"),
                 (.overview, CGSize(width: 345, height: 345), .large, nil, "large"),
+                (.overview, CGSize(width: 345, height: 345), .large, today, "large-day"),
                 (.models, CGSize(width: 345, height: 345), .large, nil, "large-models"),
                 (.overview, CGSize(width: 345, height: 165), .medium, nil, "medium"),
                 (.overview, CGSize(width: 345, height: 165), .medium, today, "medium-day"),
-                (.overview, CGSize(width: 165, height: 165), .small, nil, "small")]
+                (.overview, CGSize(width: 165, height: 165), .small, nil, "small"),
+                (.overview, CGSize(width: 165, height: 165), .small, today, "small-day")]
             for (tab, size, kind, day, suffix) in shots {
                 // 截图用实色卡片，不要桌面上的玻璃透明效果
                 let view = UsageView(snapshot: snap, tab: tab, range: .all, size: kind, selectedDay: day)
