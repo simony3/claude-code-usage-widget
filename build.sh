@@ -20,3 +20,15 @@ if [ "${1:-}" = install ]; then
   open /Applications/ClaudeUsage.app
   echo "已安装到 /Applications 并启动"
 fi
+if [ "${1:-}" = dmg ]; then
+  VER=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$APP/Contents/Info.plist")
+  STAGE=build/dmg DMG=build/ClaudeCodeUsageWidget-$VER.dmg
+  rm -rf $STAGE && mkdir -p $STAGE
+  cp -R "$APP" $STAGE/
+  ln -s /Applications $STAGE/Applications
+  hdiutil create -volname "Claude Code Usage Widget" -srcfolder $STAGE -ov -format UDZO $DMG >/dev/null
+  rm -rf $STAGE
+  /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$APP" 2>/dev/null || true
+  pluginkit -r "$APP/Contents/PlugIns/ClaudeUsageWidget.appex" 2>/dev/null || true
+  echo "已生成 $DMG"
+fi
