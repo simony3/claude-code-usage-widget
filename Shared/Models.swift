@@ -48,6 +48,7 @@ struct HeatDay: Codable, Sendable {
     var date: String
     var messages: Int
     var tokens: Int  // 输入+输出
+    var allTokens: Int  // 含缓存读写
 }
 
 struct UsageSnapshot: Codable, Sendable {

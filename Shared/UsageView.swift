@@ -23,9 +23,9 @@ struct UsageView: View {
     private func dayBar(_ d: HeatDay, font: CGFloat, short: Bool = false) -> some View {
         HStack(spacing: 4) {
             arrow("chevron.left", neighbor(d, -1), font)
-            Text(short ? "\(dayLabel(d)) \(Fmt.compact(d.tokens))"
-                       : "\(dayLabel(d))：输入+输出 \(Fmt.compact(d.tokens)) token · 消息 \(d.messages.formatted())")
-                .monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+            Text(short ? "\(d.date.split(separator: "-").suffix(2).map { String(Int($0) ?? 0) }.joined(separator: "/")) \(Fmt.compact(d.tokens))/\(Fmt.compact(d.allTokens))"
+                       : "\(dayLabel(d))：输入+输出 \(Fmt.compact(d.tokens)) · 全部 \(Fmt.compact(d.allTokens))")
+                .monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
             arrow("chevron.right", neighbor(d, 1), font)
             Spacer(minLength: 0)
             Button(intent: SetDayIntent("")) {
@@ -79,8 +79,8 @@ struct UsageView: View {
                 heatmap
             } else {
                 HStack(spacing: 10) {
-                    Text("消息 \(stats.messages.formatted())")
-                    Text("会话 \(stats.sessions)")
+                    Text("全部 \(Fmt.compact(stats.tokens.all))")
+                    Text("活跃 \(stats.activeDays) 天")
                 }
                 .font(.system(size: 11)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
                 // 格子太小点不准：整块热力图点一下先选中今天，之后用箭头切换
@@ -96,7 +96,7 @@ struct UsageView: View {
                 HStack(spacing: 8) {
                     VStack(spacing: 4) {
                         card("Token（输入+输出）", Fmt.compact(stats.tokens.main), compact: true)
-                        card("消息", stats.messages.formatted(), compact: true)
+                        card("全部 Token（含缓存）", Fmt.compact(stats.tokens.all), compact: true)
                         if picked == nil { card("活跃天数", stats.activeDays.formatted(), compact: true) }
                     }
                     .frame(width: 112)
@@ -158,8 +158,8 @@ struct UsageView: View {
             Grid(horizontalSpacing: 6, verticalSpacing: 6) {
                 GridRow {
                     card("会话", stats.sessions.formatted())
-                    card("消息", stats.messages.formatted())
                     card("Token（输入+输出）", Fmt.compact(stats.tokens.main))
+                    card("全部 Token（含缓存）", Fmt.compact(stats.tokens.all))
                 }
                 GridRow {
                     card("活跃天数", stats.activeDays.formatted())
