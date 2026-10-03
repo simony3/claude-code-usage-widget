@@ -42,6 +42,17 @@ A WidgetKit desktop widget with a layout modeled on the usage panel in the Claud
 - **Active days / peak hour / heatmap**: local time zone, counting your messages plus model replies.
 - The counting logic was cross-checked item by item against a standalone Python script.
 
+## Download
+
+Requires macOS 15+.
+
+1. Download `ClaudeCodeUsageWidget-x.x.dmg` from [Releases](https://github.com/simony3/claude-code-usage-widget/releases/latest)
+2. Open the DMG and drag `ClaudeUsage` into Applications
+3. Open `ClaudeUsage`. The first time, macOS says it can't verify the developer: go to System Settings → Privacy & Security, find ClaudeUsage near the bottom and click "Open Anyway"
+4. Right-click the desktop → "Edit Widgets" → search for "Claude", then drag "Claude Code 用量小组件" onto the desktop
+
+The app has no window: it counts usage in the background and launches at login. The warning in step 3 appears because the app is ad-hoc signed rather than signed and notarized with a paid Apple Developer account. You only need to allow it once.
+
 ## Install from source
 
 Requires macOS 15+, Xcode and [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
@@ -54,7 +65,7 @@ cd claude-code-usage-widget
 
 The build uses ad-hoc signing, so no certificate is needed. Once installed, right-click the desktop → "Edit Widgets" → search for "Claude", then drag "Claude Code 用量小组件" onto the desktop.
 
-After changing the code, run `./build.sh install` again.
+After changing the code, run `./build.sh install` again. `./build.sh dmg` packages a DMG.
 
 ## How it works
 

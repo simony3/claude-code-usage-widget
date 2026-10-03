@@ -40,6 +40,17 @@
 - **活跃天数 / 高峰时段 / 热力图**：按本地时区，以你发的话 + 模型回复计数。
 - 统计逻辑用独立的 Python 脚本逐项对账过。
 
+## 下载安装
+
+需要 macOS 15+。
+
+1. 到 [Releases](https://github.com/simony3/claude-code-usage-widget/releases/latest) 下载 `ClaudeCodeUsageWidget-x.x.dmg`
+2. 打开 DMG，把 `ClaudeUsage` 拖进「应用程序」
+3. 双击打开 `ClaudeUsage`。第一次打开 macOS 会提示无法验证开发者：打开「系统设置 → 隐私与安全性」，在下方找到 ClaudeUsage，点「仍要打开」
+4. 桌面右键 →「编辑小组件」→ 搜索「Claude」，把「Claude Code 用量小组件」拖到桌面
+
+App 打开后没有窗口，它在后台统计用量并开机自启。第 3 步的提示是因为没有付费的苹果开发者签名和公证，只做了 ad-hoc 签名；只需要点一次。
+
 ## 从源码安装
 
 需要 macOS 15+、Xcode、[XcodeGen](https://github.com/yonaskolb/XcodeGen)（`brew install xcodegen`）。
@@ -52,7 +63,7 @@ cd claude-code-usage-widget
 
 默认用 ad-hoc 签名，不需要证书。装好后在桌面右键 →「编辑小组件」→ 搜索「Claude」，把「Claude Code 用量小组件」拖到桌面。
 
-改了代码重新跑 `./build.sh install` 即可。
+改了代码重新跑 `./build.sh install` 即可；`./build.sh dmg` 打包成 DMG。
 
 ## 工作原理
 
