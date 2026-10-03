@@ -47,6 +47,7 @@ struct RangeStats: Codable, Sendable {
 struct HeatDay: Codable, Sendable {
     var date: String
     var messages: Int
+    var tokens: Int  // 输入+输出
 }
 
 struct UsageSnapshot: Codable, Sendable {

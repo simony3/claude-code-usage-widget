@@ -8,6 +8,15 @@ struct UsageView: View {
     let tab: UsageTab
     let range: UsageRange
     var size: UsageSize = .large
+    var selectedDay: String? = nil
+
+    private var picked: HeatDay? { snapshot?.heatmap.first { $0.date == selectedDay } }
+    private var heatmap: Heatmap { Heatmap(days: snapshot?.heatmap ?? [], selected: selectedDay) }
+
+    private func dayLabel(_ d: HeatDay) -> String {
+        let p = d.date.split(separator: "-").compactMap { Int($0) }
+        return p.count == 3 ? "\(p[1])月\(p[2])日" : d.date
+    }
 
     private var stats: RangeStats { snapshot?.ranges[size == .small ? .all : range] ?? RangeStats() }
 
@@ -29,12 +38,18 @@ struct UsageView: View {
             Text(Fmt.compact(stats.tokens.main)).font(.system(size: 28, weight: .bold)).monospacedDigit()
                 .minimumScaleFactor(0.6).lineLimit(1)
             Text("Token（输入+输出）").font(.system(size: 10)).foregroundStyle(.secondary)
-            HStack(spacing: 10) {
-                Text("消息 \(stats.messages.formatted())")
-                Text("会话 \(stats.sessions)")
+            Group {
+                if let d = picked {
+                    Text("\(dayLabel(d)) · \(Fmt.compact(d.tokens))")
+                } else {
+                    HStack(spacing: 10) {
+                        Text("消息 \(stats.messages.formatted())")
+                        Text("会话 \(stats.sessions)")
+                    }
+                }
             }
             .font(.system(size: 11)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
-            Heatmap(days: snapshot?.heatmap ?? [])
+            heatmap
         }
     }
 
@@ -47,7 +62,11 @@ struct UsageView: View {
                     card("消息", stats.messages.formatted(), compact: true)
                     card("活跃天数", stats.activeDays.formatted(), compact: true)
                 }
-                Heatmap(days: snapshot?.heatmap ?? [])
+                heatmap
+                if let d = picked {
+                    Text("\(dayLabel(d))：输入+输出 \(Fmt.compact(d.tokens)) token · 消息 \(d.messages.formatted())")
+                        .font(.system(size: 10)).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
+                }
             } else {
                 ForEach(stats.models.prefix(2)) { m in
                     VStack(alignment: .leading, spacing: 2) {
@@ -112,8 +131,12 @@ struct UsageView: View {
                     card("最常用模型", stats.favoriteModel ?? "—")
                 }
             }
-            Heatmap(days: snapshot?.heatmap ?? [])
-            footer("用掉的 token 约是《小王子》全书的 \(max(1, stats.tokens.main / 22_000)) 倍")
+            heatmap
+            if let d = picked {
+                footer("\(dayLabel(d))：输入+输出 \(Fmt.compact(d.tokens)) token · 消息 \(d.messages.formatted())")
+            } else {
+                footer("用掉的 token 约是《小王子》全书的 \(max(1, stats.tokens.main / 22_000)) 倍")
+            }
         }
     }
 
@@ -175,6 +198,7 @@ struct UsageView: View {
 
 struct Heatmap: View {
     let days: [HeatDay]
+    var selected: String? = nil
     private let gap: CGFloat = 3
 
     var body: some View {
@@ -188,10 +212,18 @@ struct Heatmap: View {
                 ForEach(0..<cols, id: \.self) { c in
                     VStack(spacing: gap) {
                         ForEach(0..<7, id: \.self) { r in
-                            let v = grid[c][r]
-                            RoundedRectangle(cornerRadius: 2.5)
-                                .fill(color(v, levels))
-                                .frame(width: cellW, height: cell)
+                            let i = grid[c][r]
+                            let shape = RoundedRectangle(cornerRadius: 2.5)
+                            if i < 0 {
+                                Color.clear.frame(width: cellW, height: cell)
+                            } else {
+                                Button(intent: SelectDayIntent(days[i].date)) {
+                                    shape.fill(color(days[i].messages, levels))
+                                        .overlay(shape.stroke(Color.primary, lineWidth: days[i].date == selected ? 1.5 : 0))
+                                        .frame(width: cellW, height: cell)
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
                     }
                 }
@@ -200,10 +232,10 @@ struct Heatmap: View {
         .frame(maxHeight: .infinity)
     }
 
-    // 最后一列是本周，行按周日到周六；今天之后的格子留空（-1）
+    // 返回每格对应 days 的下标；最后一列是本周，行按周日到周六；今天之后或超出数据范围的格子为 -1
     private func layout(cols: Int) -> [[Int]] {
         guard let last = days.last, let lastDate = Self.fmt.date(from: last.date) else {
-            return Array(repeating: Array(repeating: 0, count: 7), count: cols)
+            return Array(repeating: Array(repeating: -1, count: 7), count: cols)
         }
         let todayRow = Calendar.current.component(.weekday, from: lastDate) - 1
         var g = Array(repeating: Array(repeating: -1, count: 7), count: cols)
@@ -212,7 +244,7 @@ struct Heatmap: View {
                 let back = (cols - 1 - c) * 7 + (todayRow - r)
                 if back < 0 { continue }
                 let i = days.count - 1 - back
-                g[c][r] = i >= 0 ? days[i].messages : 0
+                g[c][r] = i
             }
         }
         return g
@@ -225,7 +257,6 @@ struct Heatmap: View {
     }
 
     private func color(_ v: Int, _ t: [Int]) -> Color {
-        if v < 0 { return .clear }
         if v == 0 { return Color.primary.opacity(0.08) }
         let level = t.filter { v > $0 }.count
         return Color.blue.opacity([0.35, 0.55, 0.78, 1.0][level])

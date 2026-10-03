@@ -161,11 +161,16 @@ enum StatsEngine {
             s.favoriteModel = models.values.max { $0.replies < $1.replies }?.name
             ranges[r] = s
         }
-        var perDay: [String: Int] = [:]
-        for f in cache.values { for (d, a) in f.days { perDay[d, default: 0] += a.prompts + a.replies } }
+        var perDay: [String: Int] = [:], perDayTok: [String: Int] = [:]
+        for f in cache.values {
+            for (d, a) in f.days {
+                perDay[d, default: 0] += a.prompts + a.replies
+                perDayTok[d, default: 0] += a.models.values.reduce(0) { $0 + $1.tokens.main }
+            }
+        }
         let heat = (0..<371).reversed().map { back -> HeatDay in
             let k = dayKey(cal.date(byAdding: .day, value: -back, to: today)!)
-            return HeatDay(date: k, messages: perDay[k] ?? 0)
+            return HeatDay(date: k, messages: perDay[k] ?? 0, tokens: perDayTok[k] ?? 0)
         }
         return UsageSnapshot(generatedAt: now, ranges: ranges, heatmap: heat)
     }

@@ -23,7 +23,20 @@ struct SelectRangeIntent: AppIntent {
     }
 }
 
+struct SelectDayIntent: AppIntent {
+    static var title: LocalizedStringResource = "查看某天用量"
+    @Parameter(title: "日期") var day: String
+    init() {}
+    init(_ d: String) { day = d }
+    // 再点同一天就收起
+    func perform() async throws -> some IntentResult {
+        Shared.defaults.set(Shared.selectedDay == day ? nil : day, forKey: "day")
+        return .result()
+    }
+}
+
 extension Shared {
+    static var selectedDay: String? { defaults.string(forKey: "day") }
     static var tab: UsageTab { UsageTab(rawValue: defaults.string(forKey: "tab") ?? "") ?? .overview }
     static var range: UsageRange { UsageRange(rawValue: defaults.string(forKey: "range") ?? "") ?? .all }
 }
