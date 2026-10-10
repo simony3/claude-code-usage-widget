@@ -2,7 +2,7 @@
 
 <h1 align="center">Claude Code Usage Widget</h1>
 
-<p align="center">把 Claude Code CLI 的使用统计放到 macOS 桌面上的原生小组件</p>
+<p align="center">把 Claude Code（CLI 和桌面端）的使用统计放到 macOS 桌面上的原生小组件</p>
 
 <p align="center">中文 · <a href="README.en.md">English</a></p>
 
@@ -10,8 +10,9 @@
 
 ## 它能做什么
 
-一个 WidgetKit 桌面小组件，布局参考 Claude 桌面版的用量面板，数据全部来自本机 `~/.claude/projects` 里的 Claude Code CLI 会话记录，不联网、不上传。
+一个 WidgetKit 桌面小组件，布局参考 Claude 桌面版的用量面板，数据全部来自本机 `~/.claude/projects` 里的 Claude Code 会话记录，不联网、不上传。
 
+- **来源**：CLI 和桌面端（Claude 桌面版的 Code 功能）分开统计，表头最左边切换；小号点标题切换
 - **概览**：会话数、Token（输入+输出）、全部 Token（含缓存）、活跃天数、高峰时段、最常用模型
 - **模型**：按模型拆开输入 / 输出 / 缓存读 / 缓存写四类 token
 - **时间范围**：全部 / 30 天 / 7 天，点一下切换
@@ -33,7 +34,7 @@
 
 ## 统计口径
 
-- **只算 Claude Code CLI**：Claude 桌面版的 Code 功能也会往 `~/.claude/projects` 写记录（`entrypoint` 为 `claude-desktop`），这些会被排除。
+- **CLI 和桌面端分开**：按每条记录的 `entrypoint` 区分，`cli`（含 `sdk-cli`）归 CLI，`claude-desktop` 归桌面端，两边各有自己的概览、模型、热力图和每日详情，互不相加。
 - **按回复去重**：同一次模型回复会按内容块拆成多行写入记录，每行都带同一份 usage（实测平均重复约 2.2 次）。这里按 `message.id` 去重，所以数字会比直接累加的小。
 - **Token（输入+输出）**：不含缓存。**全部 Token**：输入 + 输出 + 缓存读 + 缓存写，几乎都是缓存读取。
 - **会话**：有过对话的会话文件数（子 agent 的记录算 token，不单独算会话）。

@@ -16,6 +16,7 @@ struct FileAgg: Codable {
     var size: Int
     var mtime: Double
     var isSubagent: Bool
+    var source: UsageSource?  // 一个会话文件只会有一种 entrypoint；认不出的来源为空，不计入
     var days: [String: DayAgg]
 }
 
@@ -26,7 +27,7 @@ enum StatsEngine {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("ClaudeUsage")
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("cache-v2.json")
+        return dir.appendingPathComponent("cache-v3.json")
     }()
 
     static func loadCache() -> [String: FileAgg] {
@@ -50,7 +51,8 @@ enum StatsEngine {
             alive.insert(path)
             if let c = cache[path], c.size == size, c.mtime == mtime { continue }
             let sub = url.pathComponents.contains("subagents")
-            cache[path] = FileAgg(size: size, mtime: mtime, isSubagent: sub, days: parse(url, isSubagent: sub))
+            let (source, days) = parse(url, isSubagent: sub)
+            cache[path] = FileAgg(size: size, mtime: mtime, isSubagent: sub, source: source, days: days)
         }
         for k in cache.keys where !alive.contains(k) { cache[k] = nil }
     }
@@ -65,9 +67,10 @@ enum StatsEngine {
 
     static func dayKey(_ d: Date) -> String { dayFmt.string(from: d) }
 
-    static func parse(_ url: URL, isSubagent: Bool) -> [String: DayAgg] {
-        guard let data = try? Data(contentsOf: url) else { return [:] }
+    static func parse(_ url: URL, isSubagent: Bool) -> (UsageSource?, [String: DayAgg]) {
+        guard let data = try? Data(contentsOf: url) else { return (nil, [:]) }
         var days: [String: DayAgg] = [:]
+        var source: UsageSource?
         var seen = Set<String>()
         let userTag = Data(#""type":"user""#.utf8), asstTag = Data(#""type":"assistant""#.utf8)
         for line in data.split(separator: 0x0A) {
@@ -75,11 +78,11 @@ enum StatsEngine {
             guard isAsst || line.range(of: userTag) != nil,
                   let o = try? JSONSerialization.jsonObject(with: line) as? [String: Any],
                   let type = o["type"] as? String, type == "user" || type == "assistant",
-                  // 只统计 Claude Code CLI；桌面版 Code 也写到这里，entrypoint 为 claude-desktop
-                  (o["entrypoint"] as? String)?.contains("cli") ?? true,
+                  let src = UsageSource(entrypoint: o["entrypoint"] as? String ?? "cli"), src == source ?? src,
                   let ts = o["timestamp"] as? String,
                   let date = isoFrac.date(from: ts) ?? iso.date(from: ts),
                   let msg = o["message"] as? [String: Any] else { continue }
+            source = src
             let key = dayKey(date)
             let hour = Calendar.current.component(.hour, from: date)
             if type == "assistant" {
@@ -102,7 +105,7 @@ enum StatsEngine {
                 days[key]!.hours[hour] += 1
             }
         }
-        return days
+        return (source, days)
     }
 
     // 只算用户亲手发的话：排除工具结果、斜杠命令、系统注入、中断标记
@@ -114,6 +117,8 @@ enum StatsEngine {
             text = blocks.compactMap { $0["type"] as? String == "text" ? $0["text"] as? String : nil }.joined()
             if text.isEmpty && blocks.contains(where: { $0["type"] as? String == "image" }) { return true }
         }
+        // 桌面端会把 system-reminder 和用户的话塞进同一个文本块，先剥掉再判断
+        text = text.replacingOccurrences(of: "<system-reminder>.*?</system-reminder>", with: "", options: .regularExpression)
         let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
         return !t.isEmpty && !t.hasPrefix("<") && !t.hasPrefix("[Request interrupted")
     }
@@ -128,6 +133,14 @@ enum StatsEngine {
     }
 
     static func snapshot(from cache: [String: FileAgg], now: Date = Date()) -> UsageSnapshot {
+        var sources: [UsageSource: SourceStats] = [:]
+        for s in UsageSource.allCases {
+            sources[s] = stats(cache.values.filter { $0.source == s }, now: now)
+        }
+        return UsageSnapshot(generatedAt: now, sources: sources)
+    }
+
+    static func stats(_ files: [FileAgg], now: Date) -> SourceStats {
         let cal = Calendar.current
         let today = cal.startOfDay(for: now)
         var ranges: [UsageRange: RangeStats] = [:]
@@ -137,7 +150,7 @@ enum StatsEngine {
             var hours = [Int](repeating: 0, count: 24)
             var activeDays = Set<String>()
             var models: [String: ModelStats] = [:]
-            for f in cache.values {
+            for f in files {
                 var active = false
                 for (day, a) in f.days where day >= cutoff {
                     let n = a.prompts + a.replies
@@ -162,7 +175,7 @@ enum StatsEngine {
             ranges[r] = s
         }
         var det: [String: DayDetail] = [:], dHours: [String: [Int]] = [:], dModels: [String: [String: ModelStats]] = [:]
-        for f in cache.values {
+        for f in files {
             for (d, a) in f.days where a.prompts + a.replies > 0 {
                 det[d, default: DayDetail()].prompts += a.prompts
                 det[d]!.replies += a.replies
@@ -184,6 +197,6 @@ enum StatsEngine {
             return HeatDay(date: k, messages: x.map { $0.prompts + $0.replies } ?? 0,
                            tokens: x?.tokens.main ?? 0, allTokens: x?.tokens.all ?? 0, detail: x)
         }
-        return UsageSnapshot(generatedAt: now, ranges: ranges, heatmap: heat)
+        return SourceStats(ranges: ranges, heatmap: heat)
     }
 }

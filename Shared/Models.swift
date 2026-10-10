@@ -11,6 +11,17 @@ enum Shared {
     static var defaults: UserDefaults { .standard }
 }
 
+// 最大层：Claude Code CLI 和 Claude 桌面端的 Code 功能各算各的
+enum UsageSource: String, CaseIterable, Codable, CodingKeyRepresentable, Sendable {
+    case cli, desktop
+    var label: String { switch self { case .cli: "CLI"; case .desktop: "桌面端" } }
+    var other: UsageSource { self == .cli ? .desktop : .cli }
+    init?(entrypoint: String) {
+        if entrypoint.contains("cli") { self = .cli }
+        else if entrypoint == "claude-desktop" { self = .desktop }
+        else { return nil }
+    }
+}
 enum UsageTab: String, CaseIterable, Codable, Sendable { case overview, models }
 enum UsageRange: String, CaseIterable, Codable, CodingKeyRepresentable, Sendable {
     case all, d30, d7
@@ -59,10 +70,14 @@ struct DayDetail: Codable, Sendable {
     var models: [ModelStats] = []
 }
 
+struct SourceStats: Codable, Sendable {
+    var ranges: [UsageRange: RangeStats] = [:]
+    var heatmap: [HeatDay] = []
+}
+
 struct UsageSnapshot: Codable, Sendable {
     var generatedAt: Date
-    var ranges: [UsageRange: RangeStats]
-    var heatmap: [HeatDay]
+    var sources: [UsageSource: SourceStats]
 
     static var lastError = ""
     static func load() -> UsageSnapshot? {

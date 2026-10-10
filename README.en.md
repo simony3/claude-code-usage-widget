@@ -2,7 +2,7 @@
 
 <h1 align="center">Claude Code Usage Widget</h1>
 
-<p align="center">A native macOS desktop widget that shows your Claude Code CLI usage stats</p>
+<p align="center">A native macOS desktop widget that shows your Claude Code usage stats, CLI and desktop app side by side</p>
 
 <p align="center"><a href="README.md">中文</a> · English</p>
 
@@ -10,8 +10,9 @@
 
 ## What it does
 
-A WidgetKit desktop widget with a layout modeled on the usage panel in the Claude desktop app. All data comes from the Claude Code CLI session logs in `~/.claude/projects` on your Mac. Nothing goes over the network or gets uploaded.
+A WidgetKit desktop widget with a layout modeled on the usage panel in the Claude desktop app. All data comes from the Claude Code session logs in `~/.claude/projects` on your Mac. Nothing goes over the network or gets uploaded.
 
+- **Source**: CLI and the desktop app (the Code feature in the Claude desktop app) are tracked separately. Switch with the leftmost pills in the header, or tap the title on the small size.
 > The widget UI is currently in Chinese only.
 
 - **Overview**: sessions, tokens (input + output), all tokens (including cache), active days, peak hour, most-used model
@@ -35,7 +36,7 @@ A WidgetKit desktop widget with a layout modeled on the usage panel in the Claud
 
 ## How usage is counted
 
-- **Claude Code CLI only**: the Code feature in the Claude desktop app also writes logs to `~/.claude/projects` (with `entrypoint` set to `claude-desktop`). Those are excluded.
+- **CLI and desktop kept apart**: each log line carries an `entrypoint`; `cli` (and `sdk-cli`) count as CLI, `claude-desktop` counts as desktop. Each source has its own overview, model breakdown, heatmap and day details. They are never summed.
 - **Deduplicated per reply**: a single model reply is written as several lines, one per content block, and each line carries the same usage (about 2.2× duplication in practice). Usage is deduplicated by `message.id`, so the numbers are lower than a naive sum.
 - **Tokens (input + output)** exclude cache. **All tokens** = input + output + cache read + cache write, and are mostly cache reads.
 - **Sessions**: session files that contain a conversation. Subagent logs count toward tokens but not as separate sessions.

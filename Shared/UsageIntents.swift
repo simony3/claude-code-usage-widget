@@ -1,6 +1,17 @@
 import AppIntents
 import WidgetKit
 
+struct SelectSourceIntent: AppIntent {
+    static var title: LocalizedStringResource = "切换来源"
+    @Parameter(title: "来源") var source: String
+    init() {}
+    init(_ s: UsageSource) { source = s.rawValue }
+    func perform() async throws -> some IntentResult {
+        Shared.defaults.set(source, forKey: "source")
+        return .result()
+    }
+}
+
 struct SelectTabIntent: AppIntent {
     static var title: LocalizedStringResource = "切换页面"
     @Parameter(title: "页面") var tab: String
@@ -37,6 +48,7 @@ struct SetDayIntent: AppIntent {
 
 extension Shared {
     static var selectedDay: String? { defaults.string(forKey: "day") }
+    static var source: UsageSource { UsageSource(rawValue: defaults.string(forKey: "source") ?? "") ?? .cli }
     static var tab: UsageTab { UsageTab(rawValue: defaults.string(forKey: "tab") ?? "") ?? .overview }
     static var range: UsageRange { UsageRange(rawValue: defaults.string(forKey: "range") ?? "") ?? .all }
 }

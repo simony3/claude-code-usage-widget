@@ -5,17 +5,20 @@ enum UsageSize { case small, medium, large }
 
 struct UsageView: View {
     let snapshot: UsageSnapshot?
+    let source: UsageSource
     let tab: UsageTab
     let range: UsageRange
     var size: UsageSize = .large
     var selectedDay: String? = nil
 
-    private var picked: HeatDay? { snapshot?.heatmap.first { $0.date == selectedDay } }
-    private var heatmap: Heatmap { Heatmap(days: snapshot?.heatmap ?? []) }
-    private var today: String { snapshot?.heatmap.last?.date ?? "" }
+    private var data: SourceStats { snapshot?.sources[source] ?? SourceStats() }
+    private var picked: HeatDay? { data.heatmap.first { $0.date == selectedDay } }
+    private var heatmap: Heatmap { Heatmap(days: data.heatmap) }
+    private var today: String { data.heatmap.last?.date ?? "" }
 
     private func neighbor(_ d: HeatDay, _ step: Int) -> HeatDay? {
-        guard let days = snapshot?.heatmap, let i = days.firstIndex(where: { $0.date == d.date }),
+        let days = data.heatmap
+        guard let i = days.firstIndex(where: { $0.date == d.date }),
               days.indices.contains(i + step) else { return nil }
         return days[i + step]
     }
@@ -38,6 +41,7 @@ struct UsageView: View {
                 .buttonStyle(.plain)
                 Text(Fmt.day(d.date, weekday: size != .small)).font(.system(size: f + 1, weight: .semibold))
                     .lineLimit(1).minimumScaleFactor(0.7)
+                if size != .small { Text(source.label).font(.system(size: f)).foregroundStyle(.secondary) }
                 Spacer(minLength: 0)
                 arrow("chevron.left", neighbor(d, -1), f)
                 arrow("chevron.right", neighbor(d, 1), f)
@@ -102,7 +106,7 @@ struct UsageView: View {
         .opacity(target == nil ? 0.3 : 1)
     }
 
-    private var stats: RangeStats { snapshot?.ranges[size == .small ? .all : range] ?? RangeStats() }
+    private var stats: RangeStats { data.ranges[size == .small ? .all : range] ?? RangeStats() }
 
     var body: some View {
         if snapshot == nil {
@@ -120,7 +124,15 @@ struct UsageView: View {
 
     private var small: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Claude Code · 全部").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+            // 小尺寸放不下表头：点标题在 CLI 和桌面端之间切换
+            Button(intent: SelectSourceIntent(source.other)) {
+                HStack(spacing: 3) {
+                    Text("\(source.label) · 全部")
+                    Image(systemName: "arrow.left.arrow.right").font(.system(size: 8, weight: .semibold))
+                }
+                .font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
             Text(Fmt.compact(stats.tokens.main)).font(.system(size: 28, weight: .bold)).monospacedDigit()
                 .minimumScaleFactor(0.6).lineLimit(1)
             Text("Token（输入+输出）").font(.system(size: 10)).foregroundStyle(.secondary)
@@ -166,6 +178,10 @@ struct UsageView: View {
 
     private func header(font: CGFloat) -> some View {
         HStack(spacing: 2) {
+            ForEach(UsageSource.allCases, id: \.self) { s in
+                pill(s.label, source == s, SelectSourceIntent(s), font)
+            }
+            Spacer()
             pill("概览", tab == .overview, SelectTabIntent(.overview), font)
             pill("模型", tab == .models, SelectTabIntent(.models), font)
             Spacer()
@@ -177,7 +193,7 @@ struct UsageView: View {
 
     private var full: some View {
         VStack(alignment: .leading, spacing: 8) {
-            header(font: 12)
+            header(font: 11)
             if tab == .overview {
                 overview
             } else {
@@ -190,6 +206,7 @@ struct UsageView: View {
         Button(intent: intent) {
             Text(title)
                 .font(.system(size: size, weight: on ? .semibold : .regular))
+                .lineLimit(1).fixedSize()
                 .foregroundStyle(on ? .primary : .secondary)
                 .padding(.horizontal, 8).padding(.vertical, 3)
                 .background(RoundedRectangle(cornerRadius: 6).fill(on ? AnyShapeStyle(.quaternary) : AnyShapeStyle(.clear)))
