@@ -20,9 +20,9 @@
 - **某天详情**：点热力图的格子进入当天详情页，显示全部 token、输入 / 输出 / 缓存读 / 缓存写、你发的消息、Claude 回复、会话数、高峰时段和各模型用量；左上角「返回」回到主界面，右上角 ◀ ▶ 前后切换
 - **四种尺寸**：小、中、大、超大
 
-| 中号 | 中号 · 某天详情 |
-|---|---|
-| <img src="docs/screenshots/medium.png" width="360"> | <img src="docs/screenshots/medium-day.png" width="360"> |
+| 中号 · CLI | 中号 · 桌面端 | 中号 · 某天详情 |
+|---|---|---|
+| <img src="docs/screenshots/medium.png" width="240"> | <img src="docs/screenshots/medium-desktop.png" width="240"> | <img src="docs/screenshots/medium-day.png" width="240"> |
 
 | 大号 | 大号 · 模型页 | 小号 |
 |---|---|---|

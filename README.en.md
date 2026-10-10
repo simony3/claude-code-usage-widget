@@ -22,9 +22,9 @@ A WidgetKit desktop widget with a layout modeled on the usage panel in the Claud
 - **Day details**: tap a heatmap cell to open that day's page with all tokens, input / output / cache read / cache write, your messages, Claude replies, sessions, peak hour and per-model usage. "Back" in the top-left returns to the main view, and ◀ ▶ in the top-right moves between days
 - **Four sizes**: small, medium, large, extra large
 
-| Medium | Medium · day details |
-|---|---|
-| <img src="docs/screenshots/medium.png" width="360"> | <img src="docs/screenshots/medium-day.png" width="360"> |
+| Medium · CLI | Medium · desktop | Medium · day details |
+|---|---|---|
+| <img src="docs/screenshots/medium.png" width="240"> | <img src="docs/screenshots/medium-desktop.png" width="240"> | <img src="docs/screenshots/medium-day.png" width="240"> |
 
 | Large | Large · models | Small |
 |---|---|---|
