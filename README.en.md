@@ -12,7 +12,7 @@
 
 A WidgetKit desktop widget with a layout modeled on the usage panel in the Claude desktop app. All data comes from the Claude Code session logs in `~/.claude/projects` on your Mac. Nothing goes over the network or gets uploaded.
 
-- **Source**: CLI and the desktop app (the Code feature in the Claude desktop app) are tracked separately. Switch with the leftmost pills in the header, or tap the title on the small size.
+- **Source**: shows everything by default. Tap `总计 ▾` in the top-left to cycle through CLI and the desktop app (the Code feature in the Claude desktop app); on the small size, tap the title.
 > The widget UI is currently in Chinese only.
 
 - **Overview**: sessions, tokens (input + output), all tokens (including cache), active days, peak hour, most-used model
@@ -22,7 +22,7 @@ A WidgetKit desktop widget with a layout modeled on the usage panel in the Claud
 - **Day details**: tap a heatmap cell to open that day's page with all tokens, input / output / cache read / cache write, your messages, Claude replies, sessions, peak hour and per-model usage. "Back" in the top-left returns to the main view, and ◀ ▶ in the top-right moves between days
 - **Four sizes**: small, medium, large, extra large
 
-| Medium · CLI | Medium · desktop | Medium · day details |
+| Medium · total | Medium · desktop | Medium · day details |
 |---|---|---|
 | <img src="docs/screenshots/medium.png" width="240"> | <img src="docs/screenshots/medium-desktop.png" width="240"> | <img src="docs/screenshots/medium-day.png" width="240"> |
 
@@ -36,7 +36,7 @@ A WidgetKit desktop widget with a layout modeled on the usage panel in the Claud
 
 ## How usage is counted
 
-- **CLI and desktop kept apart**: each log line carries an `entrypoint`; `cli` (and `sdk-cli`) count as CLI, `claude-desktop` counts as desktop. Each source has its own overview, model breakdown, heatmap and day details. They are never summed.
+- **Total / CLI / desktop**: each log line carries an `entrypoint`; `cli` (and `sdk-cli`) count as CLI, `claude-desktop` counts as desktop, and Total is the sum. Each source has its own overview, model breakdown, heatmap and day details.
 - **Deduplicated per reply**: a single model reply is written as several lines, one per content block, and each line carries the same usage (about 2.2× duplication in practice). Usage is deduplicated by `message.id`, so the numbers are lower than a naive sum.
 - **Tokens (input + output)** exclude cache. **All tokens** = input + output + cache read + cache write, and are mostly cache reads.
 - **Sessions**: session files that contain a conversation. Subagent logs count toward tokens but not as separate sessions.

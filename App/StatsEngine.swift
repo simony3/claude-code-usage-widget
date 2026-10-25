@@ -135,7 +135,7 @@ enum StatsEngine {
     static func snapshot(from cache: [String: FileAgg], now: Date = Date()) -> UsageSnapshot {
         var sources: [UsageSource: SourceStats] = [:]
         for s in UsageSource.allCases {
-            sources[s] = stats(cache.values.filter { $0.source == s }, now: now)
+            sources[s] = stats(cache.values.filter { s == .all ? $0.source != nil : $0.source == s }, now: now)
         }
         return UsageSnapshot(generatedAt: now, sources: sources)
     }

@@ -48,7 +48,7 @@ struct SetDayIntent: AppIntent {
 
 extension Shared {
     static var selectedDay: String? { defaults.string(forKey: "day") }
-    static var source: UsageSource { UsageSource(rawValue: defaults.string(forKey: "source") ?? "") ?? .cli }
+    static var source: UsageSource { UsageSource(rawValue: defaults.string(forKey: "source") ?? "") ?? .all }
     static var tab: UsageTab { UsageTab(rawValue: defaults.string(forKey: "tab") ?? "") ?? .overview }
     static var range: UsageRange { UsageRange(rawValue: defaults.string(forKey: "range") ?? "") ?? .all }
 }

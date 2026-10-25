@@ -27,20 +27,21 @@ if args.contains("--once") || args.contains("--dump") || args.contains("--render
         MainActor.assumeIsolated {
             let snap = UsageSnapshot.load()
             // 详情页截图用最近一个有记录的日子，今天可能还没用过
-            let day = snap?.sources[.cli]?.heatmap.last { $0.detail != nil }?.date ?? StatsEngine.dayKey(Date())
+            let day = snap?.sources[.all]?.heatmap.last { $0.detail != nil }?.date ?? StatsEngine.dayKey(Date())
             let shots: [(UsageSource, UsageTab, CGSize, UsageSize, String?, String)] = [
-                (.cli, .overview, CGSize(width: 715, height: 345), .large, nil, "extra-large"),
-                (.cli, .overview, CGSize(width: 715, height: 345), .large, day, "extra-large-day"),
-                (.cli, .overview, CGSize(width: 345, height: 345), .large, nil, "large"),
-                (.cli, .overview, CGSize(width: 345, height: 345), .large, day, "large-day"),
-                (.cli, .models, CGSize(width: 345, height: 345), .large, nil, "large-models"),
-                (.cli, .overview, CGSize(width: 345, height: 165), .medium, nil, "medium"),
+                (.all, .overview, CGSize(width: 715, height: 345), .large, nil, "extra-large"),
+                (.all, .overview, CGSize(width: 715, height: 345), .large, day, "extra-large-day"),
+                (.all, .overview, CGSize(width: 345, height: 345), .large, nil, "large"),
+                (.all, .overview, CGSize(width: 345, height: 345), .large, day, "large-day"),
+                (.all, .models, CGSize(width: 345, height: 345), .large, nil, "large-models"),
+                (.all, .overview, CGSize(width: 345, height: 165), .medium, nil, "medium"),
+                (.cli, .overview, CGSize(width: 345, height: 165), .medium, nil, "medium-cli"),
                 (.desktop, .overview, CGSize(width: 345, height: 165), .medium, nil, "medium-desktop"),
-                (.cli, .models, CGSize(width: 345, height: 165), .medium, nil, "medium-models"),
-                (.cli, .overview, CGSize(width: 345, height: 165), .medium, day, "medium-day"),
-                (.cli, .overview, CGSize(width: 165, height: 165), .small, nil, "small"),
+                (.all, .models, CGSize(width: 345, height: 165), .medium, nil, "medium-models"),
+                (.all, .overview, CGSize(width: 345, height: 165), .medium, day, "medium-day"),
+                (.all, .overview, CGSize(width: 165, height: 165), .small, nil, "small"),
                 (.desktop, .overview, CGSize(width: 165, height: 165), .small, nil, "small-desktop"),
-                (.cli, .overview, CGSize(width: 165, height: 165), .small, day, "small-day")]
+                (.all, .overview, CGSize(width: 165, height: 165), .small, day, "small-day")]
             for (source, tab, size, kind, day, suffix) in shots {
                 // 截图用实色卡片，不要桌面上的玻璃透明效果
                 let view = UsageView(snapshot: snap, source: source, tab: tab, range: .all, size: kind, selectedDay: day)

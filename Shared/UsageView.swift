@@ -124,13 +124,9 @@ struct UsageView: View {
 
     private var small: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // 小尺寸放不下表头：点标题在 CLI 和桌面端之间切换
-            Button(intent: SelectSourceIntent(source.other)) {
-                HStack(spacing: 3) {
-                    Text("\(source.label) · 全部")
-                    Image(systemName: "arrow.left.arrow.right").font(.system(size: 8, weight: .semibold))
-                }
-                .font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+            // 小尺寸放不下表头：点标题循环切换来源
+            Button(intent: SelectSourceIntent(source.next)) {
+                Text("Claude Code · \(source.label) ▾").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
             Text(Fmt.compact(stats.tokens.main)).font(.system(size: 28, weight: .bold)).monospacedDigit()
@@ -178,9 +174,7 @@ struct UsageView: View {
 
     private func header(font: CGFloat) -> some View {
         HStack(spacing: 2) {
-            ForEach(UsageSource.allCases, id: \.self) { s in
-                pill(s.label, source == s, SelectSourceIntent(s), font)
-            }
+            pill(source.label + " ▾", true, SelectSourceIntent(source.next), font)
             Spacer()
             pill("概览", tab == .overview, SelectTabIntent(.overview), font)
             pill("模型", tab == .models, SelectTabIntent(.models), font)

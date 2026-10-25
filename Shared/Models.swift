@@ -11,11 +11,12 @@ enum Shared {
     static var defaults: UserDefaults { .standard }
 }
 
-// 最大层：Claude Code CLI 和 Claude 桌面端的 Code 功能各算各的
+// 最大层：全部 = CLI + Claude 桌面端的 Code 功能；会话文件只会被标成 cli 或 desktop
 enum UsageSource: String, CaseIterable, Codable, CodingKeyRepresentable, Sendable {
-    case cli, desktop
-    var label: String { switch self { case .cli: "CLI"; case .desktop: "桌面端" } }
-    var other: UsageSource { self == .cli ? .desktop : .cli }
+    case all, cli, desktop
+    var label: String { switch self { case .all: "总计"; case .cli: "CLI"; case .desktop: "桌面端" } }
+    // 小组件做不了下拉菜单，用一个按钮循环切换
+    var next: UsageSource { Self.allCases[(Self.allCases.firstIndex(of: self)! + 1) % Self.allCases.count] }
     init?(entrypoint: String) {
         if entrypoint.contains("cli") { self = .cli }
         else if entrypoint == "claude-desktop" { self = .desktop }
