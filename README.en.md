@@ -12,7 +12,7 @@
 
 A WidgetKit desktop widget with a layout modeled on the usage panel in the Claude desktop app. All data comes from the Claude Code session logs in `~/.claude/projects` on your Mac. Nothing goes over the network or gets uploaded.
 
-- **Source**: shows everything by default. Tap `总计 ▾` in the top-left to cycle through CLI and the desktop app (the Code feature in the Claude desktop app); on the small size, tap the title.
+- **Source**: shows everything by default. Tap the "总计" pill in the top-left to cycle through CLI and the desktop app (the Code feature in the Claude desktop app); on the small size, tap the title.
 > The widget UI is currently in Chinese only.
 
 - **Overview**: sessions, tokens (input + output), all tokens (including cache), active days, peak hour, most-used model

@@ -126,7 +126,7 @@ struct UsageView: View {
         VStack(alignment: .leading, spacing: 4) {
             // 小尺寸放不下表头：点标题循环切换来源
             Button(intent: SelectSourceIntent(source.next)) {
-                Text("Claude Code · \(source.label) ▾").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+                Text("Claude Code · \(source.label)").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
             Text(Fmt.compact(stats.tokens.main)).font(.system(size: 28, weight: .bold)).monospacedDigit()
@@ -174,7 +174,7 @@ struct UsageView: View {
 
     private func header(font: CGFloat) -> some View {
         HStack(spacing: 2) {
-            pill(source.label + " ▾", true, SelectSourceIntent(source.next), font)
+            pill(source.label, true, SelectSourceIntent(source.next), font)
             Spacer()
             pill("概览", tab == .overview, SelectTabIntent(.overview), font)
             pill("模型", tab == .models, SelectTabIntent(.models), font)
